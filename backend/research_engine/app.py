@@ -32,7 +32,7 @@ def safe_print(text, **kwargs):
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '.'))
 
 try:
-    from agent.research_agent import run_research_agent
+    from .research_agent import run_research_agent
 except ImportError:
     from research_agent import run_research_agent
 
@@ -52,12 +52,16 @@ class QueryRequest(BaseModel):
     messages: List[Dict[str, Any]]
     initial_search_query_count: Optional[int] = 3
     max_research_loops: Optional[int] = 3
-    reasoning_model: Optional[str] = "gemini-2.5-flash-lite"
+    reasoning_model: Optional[str] = None  # Will use GEMINI_MODEL from .env
     instructions: Optional[str] = None
 
 @app.post("/chat")
-async def chat(request: QueryRequest, reasoning_model: str = "gemini-2.5-flash-lite"):
+async def chat(request: QueryRequest, reasoning_model: str = None):
     """Process a chat query and stream results"""
+    
+    # Use GEMINI_MODEL from environment if no model specified
+    if reasoning_model is None:
+        reasoning_model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
     
     async def event_generator():
         # Create a queue to relay events from the agent task
@@ -70,7 +74,7 @@ async def chat(request: QueryRequest, reasoning_model: str = "gemini-2.5-flash-l
                     messages=request.messages,
                     initial_search_query_count=request.initial_search_query_count or 3,
                     max_research_loops=request.max_research_loops or 3,
-                    reasoning_model=request.reasoning_model or "gemini-1.5-flash",
+                    reasoning_model=request.reasoning_model or os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite"),
                     instructions=request.instructions
                 ):
                     await queue.put(event)
@@ -105,7 +109,10 @@ async def health_check():
     return {"status": "healthy"}
 
 @app.get("/search")
-async def search(query: str, effort: str = "medium", model: str = "gemini-2.5-flash-lite"):
+async def search(query: str, effort: str = "medium", model: str = None):
+    # Use GEMINI_MODEL from environment if no model specified
+    if model is None:
+        model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
     """Simple text search endpoint - returns results as plain text.
     
     Args:

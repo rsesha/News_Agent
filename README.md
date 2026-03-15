@@ -15,7 +15,7 @@ You can plug this agent into:
 ```
 News_Agent/
 ├── Backend (Python/FastAPI)
-│   ├── agent/ - Core AI research engine
+│   ├── research_engine/ - Core AI research engine
 │   │   ├── research_agent.py - Orchestrates search → synthesis pipeline
 │   │   ├── local_llm.py - Llama-Swap & Gemini integration
 │   │   ├── app.py - FastAPI server (port 2024)
@@ -70,8 +70,8 @@ News_Agent/
 
 | File | Description |
 |------|-------------|
-| `backend/agent/research_agent.py` | Core research pipeline (query → search → answer) |
-| `backend/agent/app.py` | FastAPI server with streaming endpoint |
+| `backend/research_engine/research_agent.py` | Core research pipeline (query → search → answer) |
+| `backend/research_engine/app.py` | FastAPI server with streaming endpoint |
 | `frontend/src/App.tsx` | Main React application |
 | `main.py` | CLI entry point for search pipeline |
 | `docker-compose.yml` | Containerized deployment |
@@ -112,6 +112,7 @@ TAVILY_API_KEY=your_key
 
 # LLM Configuration
 USE_GEMINI=False  # Set to True to use Gemini API instead of local LLM
+GEMINI_MODEL=gemini-2.5-flash-lite  # Gemini model to use (when USE_GEMINI=True)
 LOCAL_MODEL_PORT=8080  # use 8080 if running Llama-Swap, 11434 for Ollama
 LOCAL_MODEL_NAME=qwen-opus  # Local model name (ignored if USE_GEMINI=True)
 LOCAL_LLM_TIMEOUT=90  # Timeout for local LLM requests in seconds
@@ -121,7 +122,7 @@ LOCAL_LLM_TIMEOUT=90  # Timeout for local LLM requests in seconds
 ```bash
 # Start Backend (using uv for proper dependency management)
 cd backend
-uv run uvicorn agent.app:app --host 0.0.0.0 --port 2024 --reload
+uv run uvicorn research_engine.app:app --host 0.0.0.0 --port 2024 --reload
 
 # Or use the Makefile command
 make dev-backend
@@ -192,6 +193,23 @@ curl "http://localhost:2024/search?query=What+is+the+capital+of+France"
 # Example 3: Latest news about artificial intelligence
 curl "http://localhost:2024/search?query=Latest+news+about+artificial+intelligence"
 ```
+
+### Python CLI Tool
+
+For a richer command-line experience with progress output, use the Python CLI:
+
+```bash
+# Basic search (uses settings from .env)
+python news_agent.py --query "Who won the World Cup in 2022"
+
+# With high effort
+python news_agent.py --query "Who won the World Cup in 2022" --effort high
+
+# With a specific model
+python news_agent.py --query "Who won the World Cup in 2022" --model gemini-2.5-flash-lite
+```
+
+This tool reads all configuration from `.env` and outputs a formatted response with citations.
 
 ### Advanced Options
 

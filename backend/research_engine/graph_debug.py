@@ -2,38 +2,37 @@ import os
 import requests
 import urllib.parse
 import json
-from agent.tools_and_schemas import SearchQueryList, Reflection
+from .tools_and_schemas import SearchQueryList, Reflection
 from dotenv import load_dotenv
 from langchain_core.messages import AIMessage
 from langgraph.types import Send
 from langgraph.graph import StateGraph
 from langgraph.graph import START, END
 from langchain_core.runnables import RunnableConfig
+from .local_llm import LocalLLM, create_local_llm_from_config, convert_messages_to_llama_format
 
-# Load .env from project root FIRST
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
-dotenv_path = os.path.join(project_root, ".env")
-load_dotenv(dotenv_path)
-
-from agent.local_llm import LocalLLM, create_local_llm_from_config, convert_messages_to_llama_format
-
-from agent.state import (
+from .state import (
     OverallState,
     QueryGenerationState,
     ReflectionState,
     WebSearchState,
 )
-from agent.configuration import Configuration
-from agent.prompts import (
+from .configuration import Configuration
+from .prompts import (
     get_current_date,
     query_writer_instructions,
     web_searcher_instructions,
     reflection_instructions,
     answer_instructions,
 )
-from agent.utils import (
+from .utils import (
+    get_citations,
     get_research_topic,
+    insert_citation_markers,
+    resolve_urls,
 )
+
+load_dotenv()
 
 # Used for Brightdata Search API
 BRIGHTDATA_API_KEY = os.getenv("BRIGHTDATA_API_KEY")
@@ -54,8 +53,6 @@ def generate_query(state: OverallState, config: RunnableConfig) -> QueryGenerati
     Returns:
         Dictionary with state update, including search_query key containing the generated queries
     """
-    # Debug print for troubleshooting
-    print("=== GENERATE_QUERY FUNCTION CALLED ===")
     configurable = Configuration.from_runnable_config(config)
 
     # check for custom initial search query count
@@ -95,37 +92,21 @@ def generate_query(state: OverallState, config: RunnableConfig) -> QueryGenerati
             
             # Try to parse JSON
             response_data = json.loads(json_str)
-            print(f"DEBUG: Parsed response_data: {response_data}")
             if 'query' in response_data:
                 query_list = response_data['query']
-                print(f"DEBUG: Extracted query from response: {query_list}")
             else:
                 # Fallback: use the research topic directly
-                research_topic = get_research_topic(state["messages"]).strip()
-                query_list = [research_topic]
-                print(f"DEBUG: Using research topic as fallback: {research_topic}")
+                query_list = [get_research_topic(state["messages"]).strip()]
         elif isinstance(response, SearchQueryList) and hasattr(response, 'query'):
             # Response is a SearchQueryList object
             query_list = response.query
-            print(f"DEBUG: Extracted query from SearchQueryList: {query_list}")
         else:
             # Fallback: use the research topic directly
-            research_topic = get_research_topic(state["messages"]).strip()
-            query_list = [research_topic]
-            print(f"DEBUG: Using research topic as fallback: {research_topic}")
-            
-        # Ensure we have valid queries
-        if not query_list or not isinstance(query_list, list):
-            research_topic = get_research_topic(state["messages"]).strip()
-            query_list = [research_topic]
-            print(f"DEBUG: Final fallback to research topic: {research_topic}")
-            
+            query_list = [get_research_topic(state["messages"]).strip()]
     except Exception as e:
         print(f"Error parsing structured response: {e}")
         # Fallback: use the research topic directly
-        research_topic = get_research_topic(state["messages"]).strip()
-        query_list = [research_topic]
-        print(f"DEBUG: Exception fallback to research topic: {research_topic}")
+        query_list = [get_research_topic(state["messages"]).strip()]
     
     print(f"DEBUG: Final query_list: {query_list}")
     return {"search_query": query_list}
@@ -154,84 +135,182 @@ def web_research(state: WebSearchState, config: RunnableConfig) -> OverallState:
     Returns:
         Dictionary with state update, including sources_gathered, research_loop_count, and web_research_results
     """
-    # OBVIOUS DEBUG PRINT - should always appear if this function is called
-    print("=== WEB_RESEARCH FUNCTION CALLED ===")
-    print(f"WEB_RESEARCH DEBUG: search_query = {state['search_query']}")
-    
     # Configure
     configurable = Configuration.from_runnable_config(config)
     formatted_prompt = web_searcher_instructions.format(
         current_date=get_current_date(),
         research_topic=state["search_query"],
     )
-    
-    # Use the main.py run_search_pipeline
+
+    # Use Brightdata Search API (Direct API approach)
     try:
-        print(f"WEB_RESEARCH DEBUG: Starting search using main.py pipeline for query: {state['search_query']}")
+        # Construct the Google search URL
+        search_url = f"https://www.google.com/search?q={state['search_query']}"
         
-        # Add the project root to sys.path so we can import main
-        import sys
-        import os
-        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
-        if project_root not in sys.path:
-            sys.path.append(project_root)
-            
-        from main import run_search_pipeline
-        
-        # Run the search pipeline
-        top_results = run_search_pipeline(state['search_query'], max_results=5)
-        
-        sources_gathered = []
-        combined_content = ""
-        
-        for i, res in enumerate(top_results):
-            title = res.get('title', f'Result {i+1}')
-            url = res.get('link', '')
-            snippet = res.get('snippet', '')
-            sources_gathered.append({
-                "label": title,
-                "short_url": f"[{i+1}]",
-                "value": url
-            })
-            combined_content += f"\n\n{i+1}. {title}\n{snippet}\nURL: {url}"
-
-        # Try to include some scraped content
-        try:
-            md_path = os.path.join(project_root, "search_text.md")
-            if os.path.exists(md_path):
-                with open(md_path, "r", encoding="utf-8") as f:
-                    scraped_content = f.read()
-                if scraped_content and len(scraped_content) > 100:
-                    # Give LLM access to some of the scraped text
-                    combined_content += f"\n\n--- Full Scraped Content Snippet ---\n{scraped_content[:8000]}"
-        except Exception as e:
-            print(f"WEB_RESEARCH DEBUG: Could not read search_text.md: {e}")        
-
-        if not sources_gathered:
-            sources_gathered = [
-                {
-                    "label": f"Search result for '{state['search_query']}'",
-                    "short_url": "[1]",
-                    "value": "https://duckduckgo.com/?q=" + urllib.parse.quote(state['search_query'])
-                }
-            ]
-            combined_content = f"No results retrieved for '{state['search_query']}'."
-        
-        # Synthesis
-        local_llm = create_local_llm_from_config(config, configurable.query_generator_model)
-        synthesis_prompt = f"Based on the following search results and scraped content, please provide a coherent summary that answers the research topic '{state['search_query']}'.\n\nSearch Results:\n{combined_content}\n\nPlease provide a well-structured response with proper citations to the sources used."
-        
-        llm_response = local_llm.call([
-            {"role": "user", "content": synthesis_prompt}
-        ])
-        
-        return {
-            "sources_gathered": sources_gathered,
-            "search_query": [state["search_query"]],
-            "web_research_result": [llm_response],
+        # Prepare the API request data
+        headers = {
+            "Authorization": f"Bearer {BRIGHTDATA_API_KEY}",
+            "Content-Type": "application/json"
         }
+        
+        data = {
+            "zone": "serp_api1",
+            "url": search_url,
+            "format": "json",
+            "render": False  # Disable rendering for faster responses
+        }
+        
+        # Make the API request
+        response = requests.post(
+            BRIGHTDATA_BASE_URL,
+            json=data,
+            headers=headers,
+            timeout=30
+        )
+        
+        # Process the search results
+        if response.status_code == 200:
+            try:
+                # Parse the JSON response from Brightdata
+                response_data = response.json()
+                
+                # Extract search results from Brightdata response structure
+                sources_gathered = []
+                combined_content = ""
+                
+                # Handle Brightdata API response format
+                if isinstance(response_data, dict):
+                    # The body is a JSON string that needs to be parsed
+                    if 'body' in response_data and isinstance(response_data['body'], str):
+                        try:
+                            body_data = json.loads(response_data['body'])
+                            # Look for organic results in the parsed body
+                            if 'organic' in body_data:
+                                results = body_data['organic']
+                            else:
+                                # Fallback to other possible locations
+                                results = []
+                                if 'results' in response_data:
+                                    results = response_data['results']
+                                elif 'organic_results' in response_data:
+                                    results = response_data['organic_results']
+                        except json.JSONDecodeError as e:
+                            print(f"Error parsing body JSON: {e}")
+                            # Fallback to raw response data
+                            results = []
+                            if 'results' in response_data:
+                                results = response_data['results']
+                            elif 'organic_results' in response_data:
+                                results = response_data['organic_results']
+                    else:
+                        # Body is not a string, try to find results directly
+                        results = []
+                        if 'results' in response_data:
+                            results = response_data['results']
+                        elif 'organic_results' in response_data:
+                            results = response_data['organic_results']
+                        elif 'organic' in response_data:
+                            results = response_data['organic']
+                    
+                    # Extract information from search results
+                    for i, result in enumerate(results[:3]):  # Limit to 3 results
+                        try:
+                            # Extract title, URL, and snippet from each result
+                            title = result.get('title', f'Result {i+1}')
+                            url = result.get('link', result.get('url', ''))  # Brightdata uses 'link' not 'url'
+                            snippet = result.get('description', result.get('snippet', ''))
+                            
+                            # Create source entry
+                            sources_gathered.append({
+                                "label": title,
+                                "short_url": f"[{i+1}]",
+                                "value": url
+                            })
+                            
+                            # Combine content for LLM processing
+                            if snippet:
+                                combined_content += f"\n\n{i+1}. {title}\n{snippet}\nURL: {url}"
+                            
+                        except Exception as e:
+                            print(f"Warning: Error processing result {i}: {e}")
+                            continue
+                
+                # If no results found, create a fallback
+                if not sources_gathered:
+                    sources_gathered = [
+                        {
+                            "label": f"Search result for '{state['search_query']}'",
+                            "short_url": "[1]",
+                            "value": search_url
+                        }
+                    ]
+                    combined_content = f"Search results for '{state['search_query']}' from Brightdata API"
+                
+                # Use local LLM to synthesize the information
+                # This maintains the same flow as the original implementation
+                local_llm = create_local_llm_from_config(config, configurable.query_generator_model)
+                
+                # Create a prompt for the LLM to synthesize the content
+                synthesis_prompt = f"""Based on the following search results, please provide a coherent summary that answers the research topic '{state['search_query']}'.
+
+Search Results:
+{combined_content}
+
+Please provide a well-structured response with proper citations to the sources used."""
+                
+                # Generate synthesized response using local LLM
+                llm_response = local_llm.call([
+                    {"role": "user", "content": synthesis_prompt}
+                ])
+                
+                # For Brightdata, we'll create a simplified citation structure
+                modified_text = llm_response
+                
+                return {
+                    "sources_gathered": sources_gathered,
+                    "search_query": [state["search_query"]],
+                    "web_research_result": [modified_text],
+                }
+            except Exception as e:
+                print(f"Error parsing Brightdata response: {e}")
+                # Fallback to basic processing if JSON parsing fails
+                sources_gathered = [
+                    {
+                        "label": f"Search result for '{state['search_query']}'",
+                        "short_url": "[1]",
+                        "value": search_url
+                    }
+                ]
+                combined_content = f"Search results for '{state['search_query']}' from Brightdata API"
+                
+                # Use local LLM to synthesize the information
+                local_llm = create_local_llm_from_config(config, configurable.query_generator_model)
+                synthesis_prompt = f"""Based on the following search results, please provide a coherent summary that answers the research topic '{state['search_query']}'.
+
+Search Results:
+{combined_content}
+
+Please provide a well-structured response with proper citations to the sources used."""
+                
+                llm_response = local_llm.call([
+                    {"role": "user", "content": synthesis_prompt}
+                ])
+                
+                return {
+                    "sources_gathered": sources_gathered,
+                    "search_query": [state["search_query"]],
+                    "web_research_result": [llm_response],
+                }
+        else:
+            # Fallback if no results
+            return {
+                "sources_gathered": [],
+                "search_query": [state["search_query"]],
+                "web_research_result": [f"No relevant information found. API Error: {response.status_code}"],
+            }
+            
     except Exception as e:
-        print(f"Error in overall search pipeline: {e}")
+        print(f"Error in Brightdata search: {e}")
         return {
             "sources_gathered": [],
             "search_query": [state["search_query"]],
@@ -282,10 +361,6 @@ def reflection(state: OverallState, config: RunnableConfig) -> ReflectionState:
         knowledge_gap = "No specific knowledge gap identified"  # Placeholder
         follow_up_queries = ["Follow-up query based on current research"]  # Placeholder
         
-        print(f"REFLECTION DEBUG: is_sufficient = {is_sufficient}")
-        print(f"REFLECTION DEBUG: research_loop_count = {state['research_loop_count']}")
-        print(f"REFLECTION DEBUG: web_research_result = {state['web_research_result']}")
-        
         # Return the parsed data
         return {
             "is_sufficient": is_sufficient,
@@ -296,7 +371,6 @@ def reflection(state: OverallState, config: RunnableConfig) -> ReflectionState:
         }
     except Exception as e:
         # Fallback to basic response handling
-        print(f"REFLECTION DEBUG: Exception occurred: {e}")
         return {
             "is_sufficient": True,
             "knowledge_gap": "Could not determine knowledge gap",
@@ -375,9 +449,6 @@ def finalize_answer(state: OverallState, config: RunnableConfig):
         {"role": "user", "content": formatted_prompt}
     ])
 
-    print(f"FINALIZE_ANSWER DEBUG: Final response before URL replacement: {response[:200]}...")
-    print(f"FINALIZE_ANSWER DEBUG: sources_gathered: {state['sources_gathered']}")
-    
     # Replace the short urls with the original urls and add all used urls to the sources_gathered
     unique_sources = []
     for source in state["sources_gathered"]:
@@ -386,10 +457,7 @@ def finalize_answer(state: OverallState, config: RunnableConfig):
                 source["short_url"], source["value"]
             )
             unique_sources.append(source)
-            print(f"FINALIZE_ANSWER DEBUG: Replaced {source['short_url']} with {source['value']}")
 
-    print(f"FINALIZE_ANSWER DEBUG: Final response after URL replacement: {response[:200]}...")
-    
     return {
         "messages": [AIMessage(content=response)],
         "sources_gathered": unique_sources,

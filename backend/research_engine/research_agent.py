@@ -1,34 +1,34 @@
 import os
+import sys
 import json
 import asyncio
 import logging
 from typing import List, Dict, Any, Optional
 from langchain_core.messages import HumanMessage, AIMessage
-from agent.local_llm import create_local_llm_from_config
-from agent.configuration import Configuration
-from agent.prompts import (
+import requests
+import urllib.parse
+
+# Add project root to path for imports FIRST
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+if project_root not in sys.path:
+    sys.path.append(project_root)
+
+# Load .env from project root BEFORE importing anything that reads env vars
+from dotenv import load_dotenv
+dotenv_path = os.path.join(project_root, ".env")
+load_dotenv(dotenv_path, override=True)
+
+# Now import modules that depend on environment variables
+from .local_llm import create_local_llm_from_config
+from .configuration import Configuration
+from .prompts import (
     get_current_date,
     query_writer_instructions,
     web_searcher_instructions,
     reflection_instructions,
     answer_instructions
 )
-from agent.utils import get_research_topic
-import requests
-import urllib.parse
-from dotenv import load_dotenv
-
-# Add project root to path for imports
-import sys
-import os
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
-if project_root not in sys.path:
-    sys.path.append(project_root)
-
-# Load .env from project root
-dotenv_path = os.path.join(project_root, ".env")
-load_dotenv(dotenv_path)
-
+from .utils import get_research_topic
 from main import run_search_pipeline
 
 # Configure logger
@@ -59,9 +59,12 @@ async def run_research_agent(
     messages: List[Dict[str, Any]],
     initial_search_query_count: int = 3,
     max_research_loops: int = 3,
-    reasoning_model: str = "gemini-2.5-flash-lite",
+    reasoning_model: str = None,
     instructions: Optional[str] = None
 ):
+    # Use GEMINI_MODEL from environment if no model specified
+    if reasoning_model is None:
+        reasoning_model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
     """
     A direct implementation of the research agent without LangGraph.
     Yields events as they happen for streaming.

@@ -20,20 +20,19 @@ import sys
 import os as os_module
 project_root = os_module.path.abspath(os_module.path.join(os_module.path.dirname(__file__), "../.."))
 dotenv_path = os_module.path.join(project_root, ".env")
-load_dotenv(dotenv_path)
+load_dotenv(dotenv_path, override=True)
 
 print(f"[INFO] Loaded .env from: {dotenv_path}")
-print(f"[INFO] USE_GEMINI={os_module.getenv('USE_GEMINI', 'NOT_SET')}")
 
 # Configuration for llama-swap API - now uses LOCAL_MODEL_PORT from .env
 LOCAL_MODEL_PORT = os.getenv("LOCAL_MODEL_PORT", "8080")
 LOCAL_MODEL_NAME = os.getenv("LOCAL_MODEL_NAME", "qwen35-small")
 LOCAL_LLM_TIMEOUT = int(os.getenv("LOCAL_LLM_TIMEOUT", "180"))  # Default 180 seconds (3 minutes)
-USE_GEMINI = os.getenv("USE_GEMINI", "False").lower() in ("true", "1", "yes")  # Force use Gemini for summarization
+# NOTE: USE_GEMINI is now read at runtime in the call() method, not at module import
 LLAMA_SWAP_BASE_URL = os.getenv("LLAMA_SWAP_BASE_URL", f"http://127.0.0.1:{LOCAL_MODEL_PORT}")
 LLAMA_SWAP_API_URL = f"{LLAMA_SWAP_BASE_URL}/v1"
 
-logger.info(f"Local LLM configured: Model={LOCAL_MODEL_NAME}, Port={LOCAL_MODEL_PORT}, Timeout={LOCAL_LLM_TIMEOUT}s, USE_GEMINI={USE_GEMINI}, URL={LLAMA_SWAP_BASE_URL}")
+print(f"[INFO] Local LLM configured: Model={LOCAL_MODEL_NAME}, Port={LOCAL_MODEL_PORT}, Timeout={LOCAL_LLM_TIMEOUT}s, URL={LLAMA_SWAP_BASE_URL}")
 
 class LocalLLMConfig(BaseModel):
     """Configuration for local LLM models."""
@@ -107,11 +106,15 @@ class LocalLLM:
         """Call the LLM with messages, falling back to Gemini if needed."""
         model_to_use = model_name or self.config.model_name
         
-        print(f"[LLM] call() - USE_GEMINI={USE_GEMINI}, model_to_use={model_to_use}")
+        # Read USE_GEMINI at runtime from environment
+        use_gemini_raw = os.getenv("USE_GEMINI", "NOT_SET")
+        use_gemini = use_gemini_raw.lower() in ("true", "1", "yes")
+        
+        print(f"[LLM] call() - USE_GEMINI_raw='{use_gemini_raw}', USE_GEMINI={use_gemini}, model_to_use={model_to_use}")
         
         # If USE_GEMINI is True, always use Gemini for summarization
-        if USE_GEMINI:
-            gemini_model = model_to_use if "gemini" in model_to_use.lower() else "gemini-2.5-flash-lite"
+        if use_gemini:
+            gemini_model = model_to_use if "gemini" in model_to_use.lower() else os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
             print(f"[LLM] Using Gemini: {gemini_model}")
             return self._call_gemini(messages, gemini_model)
         
@@ -139,8 +142,8 @@ class LocalLLM:
             
         # Fallback to Gemini if local fails and we have a key
         if os.getenv("GEMINI_API_KEY"):
-            # Use a default gemini model if we were trying a local one
-            fallback_model = "gemini-2.5-flash-lite" # or the one user mentioned
+            # Use GEMINI_MODEL from environment, default to gemini-2.5-flash-lite
+            fallback_model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
             if "gemini" not in model_to_use.lower():
                 return self._call_gemini(messages, fallback_model)
         

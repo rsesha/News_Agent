@@ -12,9 +12,9 @@ dev-frontend:
 
 dev-backend:
 	@echo "Starting backend development server..."
-	@cd backend && uv run uvicorn agent.app:app --host 0.0.0.0 --port 2024 --reload
+	@cd backend && uv run uvicorn research_engine.app:app --host 0.0.0.0 --port 2024 --reload
 
 # Run frontend and backend concurrently
 dev:
 	@echo "Starting both frontend and backend development servers..."
-	@powershell -Command "Start-Process cmd -ArgumentList '/c cd frontend && npm run dev'; cd backend; uv run uvicorn agent.app:app --host 0.0.0.0 --port 2024 --reload"
+	@powershell -Command "Start-Process cmd -ArgumentList '/c cd frontend && npm run dev'; cd backend; uv run uvicorn research_engine.app:app --host 0.0.0.0 --port 2024 --reload"
