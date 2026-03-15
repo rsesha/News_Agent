@@ -116,15 +116,10 @@ export function ActivityTimeline({
                     </div>
                   </div>
                 ))}
-                {isLoading && processedEvents.length > 0 && (
+                {isLoading && (
                   <div className="relative pl-8 pb-4">
                     <div className="absolute left-0.5 top-2 h-5 w-5 rounded-full bg-neutral-600 flex items-center justify-center ring-4 ring-neutral-700">
                       <Loader2 className="h-3 w-3 text-neutral-400 animate-spin" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-neutral-300 font-medium">
-                        Searching...
-                      </p>
                     </div>
                   </div>
                 )}

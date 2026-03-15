@@ -150,7 +150,6 @@ def run_search_pipeline(query: str, max_results: int = 5, log_callback=None) -> 
         log(f"\n[Run] Executing Search Quality Test: '{query}'")
 
         engines = [
-            ("DuckDuckGo", duckduckgo),
             ("Brightdata", brightdata),
             ("Tavily", tavily),
         ]
@@ -192,12 +191,12 @@ def run_search_pipeline(query: str, max_results: int = 5, log_callback=None) -> 
 
         export_tsv(query, all_results)
 
-        log("\n[Scraper] Starting content extraction...")
-        try:
-            scrape_and_export(query, consolidated_list, output_path="search_text.md")
-            log(f"[Scraper] Successfully exported to search_text.md")
-        except Exception as e:
-            log(f"[Scraper] ERROR: {e}")
+        # [Scraper] Skipping content extraction for speed as requested
+        # try:
+        #    scrape_and_export(query, consolidated_list, output_path="search_text.md")
+        #    log(f"[Scraper] Successfully exported to search_text.md")
+        # except Exception as e:
+        #    log(f"[Scraper] ERROR: {e}")
             
     except Exception as e:
         import traceback

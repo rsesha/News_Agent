@@ -19,9 +19,11 @@ def search(query, max_results=5):
     Performs a search using the new 'ddgs' library.
     """
     results = []
+    # Using a 10s timeout to prevent infinite hangs
     for attempt in range(2):
         try:
-            with DDGS() as ddgs:
+            # Note: ddgs uses httpx internally and timeout can be set on the object
+            with DDGS(timeout=10) as ddgs:
                 ddgs_gen = ddgs.text(query, max_results=max_results)
                 if ddgs_gen:
                     for r in ddgs_gen:
@@ -34,6 +36,7 @@ def search(query, max_results=5):
                 if results:
                     break
         except Exception as e:
+            logger.error(f"DuckDuckGo error (attempt {attempt+1}): {e}")
             if "Ratelimit" in str(e):
                 time.sleep(2)
             continue

@@ -33,34 +33,9 @@ export default function App() {
           title: "Generating Search Queries",
           data: event.generate_query?.search_query?.join(", ") || "",
         };
-      } else if (event.web_research) {
-        if ('progress' in event.web_research) {
-          // It's a progression event from the python script!
-          if (!event.web_research.progress || event.web_research.progress.trim() === "") return; // Skip empty log lines
-          processedEvent = {
-            title: "Search Progress",
-            data: event.web_research.progress,
-          };
-        } else {
-          // The final web search result event
-          const sources = event.web_research.sources_gathered || [];
-          const numSources = sources.length;
-          const uniqueLabels = [
-            ...new Set(sources.map((s: any) => s.label).filter(Boolean)),
-          ];
-          const exampleLabels = uniqueLabels.slice(0, 3).join(", ");
-          processedEvent = {
-            title: "Web Research Done",
-            data: `Gathered ${numSources} sources. Related to: ${
-              exampleLabels || "N/A"
-            }.`,
-          };
-        }
-      } else if (event.reflection) {
-        processedEvent = {
-          title: "Reflection",
-          data: event.reflection.status || "Analysing research results...",
-        };
+      } else if (event.web_research || event.reflection) {
+        // Silencing both web_research and reflection to reduce UI noise as requested
+        return;
       } else if (event.complete) {
         processedEvent = {
           title: "Research Complete",
@@ -80,10 +55,16 @@ export default function App() {
         setError(event.error.toString());
       }
       if (processedEvent) {
-        setProcessedEventsTimeline((prevEvents) => [
-          ...prevEvents,
-          processedEvent!,
-        ]);
+        setProcessedEventsTimeline((prevEvents) => {
+          // Deduplicate: If the last event has the same title and data, don't add it again
+          if (prevEvents.length > 0) {
+            const lastEvent = prevEvents[prevEvents.length - 1];
+            if (lastEvent.title === processedEvent!.title && lastEvent.data === processedEvent!.data) {
+              return prevEvents;
+            }
+          }
+          return [...prevEvents, processedEvent!];
+        });
       }
     },
     onError: (error: any) => {

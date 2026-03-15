@@ -71,7 +71,6 @@ async def run_research_agent(
     configurable = Configuration() # Default config
     
     # 2. Generate Initial Queries
-    yield {"event": "reflection", "data": {"status": "Analysing request..."}}
     yield {"event": "generate_query", "data": {"search_query": ["Generating queries..."]}}
     
     local_llm = create_local_llm_from_config(config, reasoning_model)
@@ -96,8 +95,7 @@ async def run_research_agent(
         number_queries=initial_search_query_count,
     )
     
-    logger.debug(f"Generating queries with prompt length: {len(formatted_prompt)}")
-    yield {"event": "reflection", "data": {"status": "Generating specialized search queries..."}}
+    local_llm = create_local_llm_from_config(config, reasoning_model)
     loop = asyncio.get_event_loop()
     response = await loop.run_in_executor(
         None,
@@ -122,13 +120,11 @@ async def run_research_agent(
     
     # 3. Web Research
     # 3. Web Research Loop
-    yield {"event": "reflection", "data": {"status": "Starting comprehensive web research across multiple engines..."}}
     sources_gathered = []
     all_web_research_results = []
     
     for query_idx, query in enumerate(search_queries):
         try:
-            yield {"event": "web_research", "data": {"progress": f"Searching for: {query}"}}
             logger.info(f"Starting web research for query: {query}")
             
             loop = asyncio.get_event_loop()
@@ -154,18 +150,13 @@ async def run_research_agent(
             task = asyncio.ensure_future(
                 loop.run_in_executor(
                     None,
-                    lambda: run_search_pipeline(query, max_results=5, log_callback=sync_log)
+                    lambda: run_search_pipeline(query, max_results=3, log_callback=sync_log)
                 )
             )
             
             while not task.done() or not q.empty():
                 try:
                     msg = await asyncio.wait_for(q.get(), timeout=0.1)
-                    if msg:
-                        clean_msg = str(msg)
-                        if len(clean_msg) > 1000:
-                            clean_msg = clean_msg[:1000] + "... [TRUNCATED]"
-                        yield {"event": "web_research", "data": {"progress": clean_msg}}
                 except asyncio.TimeoutError:
                     if task.done() and q.empty():
                         break
@@ -205,28 +196,16 @@ async def run_research_agent(
             if not current_sources:
                 combined_content = f"No results retrieved for '{query}'."
             
-            yield {"event": "reflection", "data": {"status": f"Summarizing results for: {query}..."}}
-            synthesis_prompt = f"Summarize the following search results and scraped content for the query '{query}':\n{combined_content}"
-            summary = await loop.run_in_executor(
-                None,
-                lambda: local_llm.call([{"role": "user", "content": synthesis_prompt}])
-            )
-            all_web_research_results.append(summary)
+            # [Speed] Skipping per-query synthesis, collecting raw data for final answer
+            all_web_research_results.append(combined_content)
             
         except Exception as e:
             logger.error(f"CRITICAL SEARCH ERROR: {e}")
-            yield {"event": "web_research", "data": {"progress": f"Error: {str(e)}"}}
             all_web_research_results.append(f"Error: {str(e)}")
             
-        yield {"event": "web_research", "data": {"search_query": query, "sources_gathered": sources_gathered}}
-
-    yield {"event": "reflection", "data": {"status": "Analysing results..."}}
-    yield {"event": "finalize_answer", "data": {"status": "Finalizing answer..."}}
-    
     summaries_text = "\n\n---\n\n".join(all_web_research_results)
     # 7. Generate Final Answer
-    yield {"event": "reflection", "data": {"status": "Research complete. Synthesizing final answer..."}}
-    yield {"event": "complete_research", "data": {"status": "Complete"}}
+    yield {"event": "finalize_answer", "data": {"status": "Finalizing answer..."}}
     
     final_prompt = answer_instructions.format(
         current_date=current_date,
