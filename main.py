@@ -152,6 +152,7 @@ def run_search_pipeline(query: str, max_results: int = 5, log_callback=None) -> 
         engines = [
             ("DuckDuckGo", duckduckgo),
             ("Tavily", tavily),
+            ("Brightdata", brightdata),
         ]
 
         all_results: Dict[str, List[Dict[str, Any]]] = {}

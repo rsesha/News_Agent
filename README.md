@@ -86,7 +86,7 @@ Open **`http://localhost:5173/app/`** to start searching.
 |---|---|---|
 | **Brightdata** | Social & Video | Best for primary sources, transcripts, and viral trends. |
 | **Tavily** | Transcripts & Research | Specialized in finding high-density information for LLMs. |
-| **DuckDuckGo** | *Excluded* | Removed from default rotation to avoid rate-limit delays. |
+| **DuckDuckGo** | *Direct* | No API key needed but we use it to avoid rate-limit delays. |
 
 ---
 
