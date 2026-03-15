@@ -1,4 +1,4 @@
-# Deep Search — Multi News Source Retrieval
+# Introducing News Search, your Multi-Source News Retrieval Tool
 
 A modular Python tool that searches multiple search API's in parallel, intelligently scores and consolidates results, scrapes full article content, and exports everything ready to feed into a multimodal AI model.
 
