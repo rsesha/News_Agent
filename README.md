@@ -1,7 +1,6 @@
-# News_Agent: Three Powerful Search Engines, One Consolidated Result ⚡
+# Introducing News Agent: Three Powerful Search Engines, One Final Answer ⚡
 
-News_Agent is a high-performance news search agent that orchestrates multiple search APIs to deliver one powerful result. It intelligently scores, consolidates, and synthesizes information similar to "AI Mode" designed for maximum speed and zero hallucination. You can plug this agent into:
-
+News Agent is a high-performance search agent that orchestrates multiple search engines to deliver one final answer. It intelligently scores, consolidates, and synthesizes information similar to "AI Mode" designed for maximum speed and zero hallucination. You can plug this agent into:
 - RAG Retrieval Pipelines to get accurate summarized information
 - Real world agents that need fast accurate information about products and real time news
 
