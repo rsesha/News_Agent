@@ -1,6 +1,6 @@
-# Deep Search — Multi-Engine Research Agent
+# Deep Search — Multi News Source Retrieval
 
-A modular Python tool that searches multiple engines in parallel, intelligently scores and consolidates results, scrapes full article content, and exports everything ready to feed into a multimodal AI model.
+A modular Python tool that searches multiple search API's in parallel, intelligently scores and consolidates results, scrapes full article content, and exports everything ready to feed into a multimodal AI model.
 
 ---
 
