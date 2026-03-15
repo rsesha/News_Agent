@@ -1,10 +1,13 @@
-# News_Agent - AI-Powered Research & Search Platform
+# Introducing News Agent: Three Powerful Search Engines, One Final Answer
 
 ![News Agent](docs/news_agent.png)
 
 ## Overview
 This is a **high-performance AI search agent** that orchestrates multiple search engines to deliver synthesized, accurate answers. Think of it as a "Google AI Overviews" engine built for developers, optimized for speed and zero hallucination.
 
+You can plug this agent into:
+- RAG Retrieval Pipelines to get accurate summarized information from the web
+- Real world agents that need fast accurate information about products and news from internet
 ---
 
 ## Architecture
