@@ -1,6 +1,6 @@
 # Introducing News Agent: Three Powerful Search Engines, One Final Answer
 
-![News Agent](docs/news_agent.png)
+![News Agent](docs/news_agent.jpg)
 
 ## Overview
 This is a **high-performance AI search agent** that orchestrates multiple search engines to deliver synthesized, accurate answers. Think of it as a "Google AI Overviews" engine built for developers, optimized for speed and zero hallucination.
