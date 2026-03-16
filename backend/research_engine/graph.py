@@ -13,7 +13,7 @@ from langchain_core.runnables import RunnableConfig
 # Load .env from project root FIRST
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 dotenv_path = os.path.join(project_root, ".env")
-load_dotenv(dotenv_path)
+load_dotenv(dotenv_path, override=True)
 
 from .local_llm import LocalLLM, create_local_llm_from_config, convert_messages_to_llama_format
 

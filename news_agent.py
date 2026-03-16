@@ -27,7 +27,7 @@ from dotenv import load_dotenv
 # Load .env from project root
 project_root = os.path.dirname(os.path.abspath(__file__))
 dotenv_path = os.path.join(project_root, ".env")
-load_dotenv(dotenv_path)
+load_dotenv(dotenv_path, override=True)
 
 from backend.research_engine.research_agent import run_research_agent
 
