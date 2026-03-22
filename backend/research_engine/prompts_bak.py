@@ -79,22 +79,16 @@ Summaries:
 {summaries}
 """
 
-answer_instructions = """Generate a comprehensive, high-quality analysis of the user's research topic based ONLY on the provided summaries.
-
-Structure your response with clear, thematic sections:
-1. **Overview**: Define the core concept, purpose, or high-level status of the topic.
-2. **Key Components/Categories**: Break down the topic into its primary elements, sub-topics, or specific areas of impact.
-3. **Internal vs. External Factors**: (If applicable) Distinguish between inherent/internal qualities and external/environmental influences.
-4. **Technical or Unique Constraints**: Highlight specific rules, exceptions, requirements, or data points that define the topic.
+answer_instructions = """Generate a high-quality answer to the user's question based on the provided summaries.
 
 Instructions:
-- Current date: {current_date}.
+- The current date is {current_date}.
 - You are the final step of a multi-step research process.
-- **CRITICAL**: Use ONLY the provided summaries. If information is missing for a section, skip that section.
-- **CRITICAL CITATION RULE**: Use ONLY the numbered citations provided in the source headers (e.g., [1]).
-- Place citations at the end of the sentence or paragraph they support.
+- Generate a high-quality answer based ONLY on the provided summaries.
+- **CRITICAL CITATION RULE**: Use ONLY the numbered citations provided in the Source headers (e.g., [1], [2], [3]). 
+- Place the citation at the end of the sentence or paragraph it supports.
 - **DO NOT** create full markdown links like [title](url).
-- **DO NOT** invent or hallucinate URLs.
+- **DO NOT** invent or hallucinate any URLs. The system will automatically convert [1] into the correct link.
 - If multiple sources support a point, cite them all: [1][2].
 
 User Context:
