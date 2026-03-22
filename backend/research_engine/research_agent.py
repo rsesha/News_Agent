@@ -69,6 +69,8 @@ async def run_research_agent(
     A direct implementation of the research agent without LangGraph.
     Yields events as they happen for streaming.
     """
+    import time
+    start_time = time.perf_counter()
     logger.debug(f"Starting run_research_agent with topic: {messages[-1].get('content')}")
     
     # 1. Setup configuration and LLM
@@ -218,45 +220,53 @@ async def run_research_agent(
         summaries=summaries_text
     )
     
-    final_answer = await loop.run_in_executor(
-        None,
-        lambda: local_llm.call([{"role": "user", "content": final_prompt}])
-    )
-    logger.debug(f"Final answer generated.")
-    
-    # Replace [1], [2], etc. with actual links
-    # Sort sources by length descending to avoid [1] replacing part of [10], [11]
-    sorted_sources = sorted(sources_gathered, key=lambda x: len(x["short_url"]), reverse=True)
-    for source in sorted_sources:
-        if source["short_url"] in final_answer:
-            # Replace [1] with [1](URL) for a better UI experience
-            markdown_link = f"{source['short_url']}({source['value']})"
-            final_answer = final_answer.replace(source["short_url"], markdown_link)
-    
-    # Save the final answer to results.txt
     try:
-        from datetime import datetime
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        results_content = f"Research Topic: {research_topic}\n"
-        results_content += f"Generated on: {timestamp}\n"
-        results_content += f"{'='*60}\n\n"
-        results_content += final_answer
-        results_content += f"\n\n{'='*60}\n"
-        results_content += f"Sources ({len(sources_gathered)}):\n"
-        for idx, source in enumerate(sources_gathered, 1):
-            results_content += f"{idx}. {source['label']}\n   {source['value']}\n"
+        final_answer = await loop.run_in_executor(
+            None,
+            lambda: local_llm.call([{"role": "user", "content": final_prompt}])
+        )
+        logger.debug(f"Final answer generated.")
         
-        results_path = os.path.join(project_root, "results.txt")
-        with open(results_path, "w", encoding="utf-8") as f:
-            f.write(results_content)
-        logger.info(f"Final answer saved to results.txt")
-    except Exception as e:
-        logger.error(f"Failed to save results to file: {e}")
+        # Replace [1], [2], etc. with actual links
+        sorted_sources = sorted(sources_gathered, key=lambda x: len(x["short_url"]), reverse=True)
+        for source in sorted_sources:
+            if source["short_url"] in final_answer:
+                markdown_link = f"{source['short_url']}({source['value']})"
+                final_answer = final_answer.replace(source["short_url"], markdown_link)
+        
+        # Time taken calculation
+        end_time = time.perf_counter()
+        time_taken = round(end_time - start_time, 2)
+
+        # Save the final answer to results.txt
+        try:
+            from datetime import datetime
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            results_content = f"Research Topic: {research_topic}\n"
+            results_content += f"Generated on: {timestamp}\n"
+            results_content += f"Time Taken: {time_taken}s\n"
+            results_content += f"{'='*60}\n\n"
+            results_content += final_answer
+            results_content += f"\n\n{'='*60}\n"
+            results_content += f"Sources ({len(sources_gathered)}):\n"
+            for idx, source in enumerate(sources_gathered, 1):
+                results_content += f"{idx}. {source['label']}\n   {source['value']}\n"
             
-    yield {
-        "event": "complete", 
-        "data": {
-            "messages": [{"type": "ai", "content": final_answer, "id": "final_answer"}],
-            "sources_gathered": sources_gathered
+            results_path = os.path.join(project_root, "results.txt")
+            with open(results_path, "w", encoding="utf-8") as f:
+                f.write(results_content)
+            logger.info(f"Final answer saved to results.txt")
+        except Exception as e:
+            logger.error(f"Failed to save results to file: {e}")
+                
+        yield {
+            "event": "complete", 
+            "data": {
+                "messages": [{"type": "ai", "content": final_answer, "id": "final_answer"}],
+                "sources_gathered": sources_gathered,
+                "time_taken": time_taken
+            }
         }
-    }
+    except Exception as e:
+        logger.error(f"Error generating final answer: {e}")
+        yield {"event": "error", "data": f"Failed to generate final answer: {str(e)}"}

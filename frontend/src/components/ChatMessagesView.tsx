@@ -147,7 +147,7 @@ const HumanMessageBubble: React.FC<HumanMessageBubbleProps> = ({
 }) => {
   return (
     <div
-      className={`text-white rounded-3xl break-words min-h-7 bg-[var(--secondary)]/40 backdrop-blur-md border border-[var(--primary)]/30 max-w-full w-full px-8 py-5 rounded-br-lg shadow-2xl mb-6 relative overflow-hidden`}
+      className={`text-neutral-950 font-normal rounded-3xl break-words min-h-7 bg-[var(--secondary)]/40 backdrop-blur-md border border-[var(--primary)]/30 max-w-full w-full px-8 py-5 rounded-br-lg shadow-2xl mb-6 relative overflow-hidden`}
     >
       <div className="absolute top-0 right-0 w-24 h-24 bg-[var(--primary)]/5 blur-3xl -z-10" />
       <ReactMarkdown components={mdComponents}>

@@ -70,14 +70,28 @@ async def chat(request: QueryRequest, reasoning_model: str = None):
         # Define a wrapper to put events into the queue
         async def agent_task():
             try:
-                async for event in run_research_agent(
+                gen = run_research_agent(
                     messages=request.messages,
                     initial_search_query_count=request.initial_search_query_count or 3,
                     max_research_loops=request.max_research_loops or 3,
                     reasoning_model=request.reasoning_model or os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite"),
                     instructions=request.instructions
-                ):
-                    await queue.put(event)
+                )
+                
+                execution_start = asyncio.get_event_loop().time()
+                while True:
+                    try:
+                        elapsed = asyncio.get_event_loop().time() - execution_start
+                        timeout = max(0.1, 45.0 - elapsed)
+                        event = await asyncio.wait_for(gen.__anext__(), timeout=timeout)
+                        await queue.put(event)
+                    except StopAsyncIteration:
+                        break
+                    except asyncio.TimeoutError:
+                        safe_print("ERROR: Global search timeout (45s) triggered.")
+                        await queue.put({"event": "error", "data": "Search Timeout: Operation took longer than 45 seconds."})
+                        break
+
                 await queue.put({"event": "done", "data": {}})
             except Exception as e:
                 safe_print(f"ERROR in research_agent: {str(e)}")
@@ -107,6 +121,20 @@ async def chat(request: QueryRequest, reasoning_model: str = None):
 async def health_check():
     """Health check endpoint"""
     return {"status": "healthy"}
+
+@app.get("/config")
+async def get_config():
+    """Returns the backend configuration for the frontend."""
+    use_gemini = os.getenv("USE_GEMINI", "False").lower() == "true"
+    gemini_model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
+    local_model = os.getenv("LOCAL_MODEL_NAME", "qwen-opus")
+    
+    return {
+        "use_gemini": use_gemini,
+        "default_model": gemini_model if use_gemini else local_model,
+        "gemini_model": gemini_model,
+        "local_model": local_model
+    }
 
 @app.get("/search")
 async def search(query: str, effort: str = "medium", model: str = None):

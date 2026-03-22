@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { SquarePen, Brain, Send, StopCircle, Zap, Cpu } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,7 +21,7 @@ interface InputFormProps {
 // List of available local LLaMA models - can be customized here
 const LOCAL_MODELS = [
   { value: "qwen-opus", label: "Qwen Opus (Local)", color: "text-cyan-400" },
-  { value: "gemini-2.5-flash-lite", label: "Gemini 2.5 Flash Lite", color: "text-orange-400" },
+  { value: "gemini-2.5-flash-lite", label: "Gemini-2.5-flash-lite", color: "text-orange-400" },
   { value: "qwen35-small", label: "Qwen 3.5 Small", color: "text-green-400" },
   { value: "qwen35-9B", label: "Qwen 3.5 9B", color: "text-blue-400" },
   { value: "qwen35-27B", label: "Qwen 3.5 27B", color: "text-purple-400" },
@@ -39,7 +39,20 @@ export const InputForm: React.FC<InputFormProps> = ({
 }) => {
   const [internalInputValue, setInternalInputValue] = useState("");
   const [effort, setEffort] = useState("medium");
-  const [model, setModel] = useState("qwen-opus");  // Default to local qwen-opus model
+  const [model, setModel] = useState("qwen-opus");
+
+  useEffect(() => {
+    // Fetch backend config to set the initial model correctly
+    fetch(`${window.location.protocol}//${window.location.hostname}:2024/config`)
+      .then(res => res.json())
+      .then(config => {
+        if (config.default_model) {
+          console.log("Setting default model from backend:", config.default_model);
+          setModel(config.default_model);
+        }
+      })
+      .catch(err => console.error("Failed to fetch model config:", err));
+  }, []);
 
   const handleInternalSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -49,8 +62,8 @@ export const InputForm: React.FC<InputFormProps> = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Submit with Ctrl+Enter (Windows/Linux) or Cmd+Enter (Mac)
-    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+    // Submit with Enter (Windows/Linux/Mac), Shift+Enter for new line
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleInternalSubmit();
     }
@@ -99,7 +112,7 @@ export const InputForm: React.FC<InputFormProps> = ({
               } p-2 cursor-pointer rounded-full transition-all duration-200 text-base`}
               disabled={isSubmitDisabled}
             >
-              Sniff
+              Search
               <Send className="ml-2 h-4 w-4" />
             </Button>
           )}
@@ -171,7 +184,7 @@ export const InputForm: React.FC<InputFormProps> = ({
             onClick={() => window.location.reload()}
           >
             <SquarePen size={16} className="mr-2" />
-            New Scent
+            New Search
           </Button>
         )}
       </div>

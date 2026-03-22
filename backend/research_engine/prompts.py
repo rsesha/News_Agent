@@ -82,10 +82,10 @@ Summaries:
 answer_instructions = """Generate a comprehensive, high-quality analysis of the user's research topic based ONLY on the provided summaries.
 
 Structure your response with clear, thematic sections:
-1. **Overview**: Define the core concept, purpose, or high-level status of the topic.
-2. **Key Components/Categories**: Break down the topic into its primary elements, sub-topics, or specific areas of impact.
-3. **Internal vs. External Factors**: (If applicable) Distinguish between inherent/internal qualities and external/environmental influences.
-4. **Technical or Unique Constraints**: Highlight specific rules, exceptions, requirements, or data points that define the topic.
+1. **Summary**: Generate a high-quality answer to the user's question based on the provided summaries.
+2. **Key Components/Categories**: Define the core concept, purpose, or high-level status of the topic.Break down the topic into its primary elements, sub-topics, or specific areas of impact.
+3. **Summary vs. Competing Narratives**: (If applicable) Distinguish between your final answer and inherent/competing narratives and external/environmental influences to illustrate alternative hypothesis and why they were considered and rejected.
+4. **Technical or User Constraints**: Highlight specific rules, exceptions, requirements, or data points that defined the topic for you to make a decision.
 
 Instructions:
 - Current date: {current_date}.

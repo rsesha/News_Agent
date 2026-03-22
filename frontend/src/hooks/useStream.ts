@@ -4,6 +4,7 @@ export interface Message {
   type: 'human' | 'ai';
   content: string;
   id?: string;
+  time_taken?: number;
 }
 
 export interface StreamConfig {
@@ -82,13 +83,12 @@ export function useStream<T>(config: StreamConfig) {
               const event = JSON.parse(jsonStr);
               
               if (event.event === 'complete' && event.data.messages) {
-                console.log("DEBUG: Research complete, adding AI messages");
+                console.log("DEBUG: Research complete, adding AI messages", event.data.time_taken);
                 setMessages(prev => {
-                    // Avoid duplicating last AI message if we already have it
                     const newMessages = [...prev];
                     event.data.messages.forEach((msg: Message) => {
                       if (!newMessages.find(m => m.content === msg.content && m.type === msg.type)) {
-                        newMessages.push(msg);
+                        newMessages.push({ ...msg, time_taken: event.data.time_taken });
                       }
                     });
                     return newMessages;
