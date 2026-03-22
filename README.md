@@ -3,6 +3,8 @@
 ![News Hound Hero View](docs/hero.png)
 
 ## Overview
+**One Search. Multiple Sources. One Final Answer. Zero Hallucinations.**
+
 This is a **high-performance AI search agent** that orchestrates multiple search engines to deliver synthesized, accurate answers. Think of it as a "Google AI Overviews" engine built for developers, optimized for speed and zero hallucination.
 
 You can plug this agent into:
@@ -53,7 +55,7 @@ News_Hound/
 
 ## How It Works
 
-![News Hound Workflow](docs/agent.png)
+<img src="docs/agent.png" width="500" alt="News Hound Workflow" />
 
 1. **Query Generation**: LLM breaks down user question into 3 targeted sub-queries
 2. **Parallel Search**: All 3 search engines execute simultaneously on each query

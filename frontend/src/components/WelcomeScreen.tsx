@@ -27,8 +27,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
       <h1 className="text-6xl md:text-8xl font-black text-neutral-100 mb-4 tracking-tighter uppercase italic">
         News <span className="text-[var(--primary)]">Hound</span>
       </h1>
-      <p className="text-2xl md:text-3xl text-neutral-100 font-bold max-w-4xl mx-auto leading-relaxed drop-shadow-sm italic">
-        One search. One retrieval. <span className="text-[var(--primary)] uppercase">Stop searching, start acting.</span>
+      <p className="text-lg md:text-xl lg:text-2xl text-neutral-100 font-bold w-full max-w-none mx-auto leading-relaxed drop-shadow-sm italic whitespace-nowrap">
+        One Search. Multiple Sources. One Final Answer. <span className="text-[var(--primary)] uppercase">Zero Hallucinations.</span>
       </p>
     </div>
     <div className="w-full mt-4">
