@@ -113,7 +113,7 @@ Open **`.env`** and add your credentials:
 GEMINI_API_KEY=your_key
 BRIGHTDATA_API_KEY=your_key
 TAVILY_API_KEY=your_key
-```
+
 # DuckDuckGo doesn't need an API key!
 
 # LLM Configuration
