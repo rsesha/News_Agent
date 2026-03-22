@@ -1,6 +1,6 @@
-# Introducing News Agent: Three Powerful Search Engines, One Final Answer
+# News Hound: Your High-Performance Intelligence Retriever
 
-![News Agent](docs/news_agent.jpg)
+![News Hound Hero View](docs/hero.png)
 
 ## Overview
 This is a **high-performance AI search agent** that orchestrates multiple search engines to deliver synthesized, accurate answers. Think of it as a "Google AI Overviews" engine built for developers, optimized for speed and zero hallucination.
@@ -13,7 +13,7 @@ You can plug this agent into:
 ## Architecture
 
 ```
-News_Agent/
+News_Hound/
 ├── Backend (Python/FastAPI)
 │   ├── research_engine/ - Core AI research engine
 │   │   ├── research_agent.py - Orchestrates search → synthesis pipeline
@@ -53,7 +53,7 @@ News_Agent/
 
 ## How It Works
 
-![News Agent Workflow](docs/agent.png)
+![News Hound Workflow](docs/agent.png)
 
 1. **Query Generation**: LLM breaks down user question into 3 targeted sub-queries
 2. **Parallel Search**: All 3 search engines execute simultaneously on each query
@@ -64,7 +64,11 @@ News_Agent/
 
 ## Interface Preview
 
-![News Agent UI](docs/app.png)
+### 🔎 Intelligent Research Mode
+![News Hound Research Tracking](docs/research_view.png)
+
+### 🐾 Definitive Answers
+![News Hound UI Result](docs/app.png)
 
 ---
 
@@ -206,13 +210,13 @@ For a richer command-line experience with progress output, use the Python CLI:
 
 ```bash
 # Basic search (uses settings from .env)
-python news_agent.py --query "Who won the World Cup in 2022"
+python news_hound.py --query "Who won the World Cup in 2022"
 
 # With high effort
-python news_agent.py --query "Who won the World Cup in 2022" --effort high
+python news_hound.py --query "Who won the World Cup in 2022" --effort high
 
 # With a specific model
-python news_agent.py --query "Who won the World Cup in 2022" --model gemini-2.5-flash-lite
+python news_hound.py --query "Who won the World Cup in 2022" --model gemini-2.5-flash-lite
 ```
 
 This tool reads all configuration from `.env` and outputs a formatted response with citations.
