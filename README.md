@@ -1,4 +1,4 @@
-# News Hound: Your High-Performance Intelligence Retriever
+# News Hound: The Only News Agent You'll Ever Need
 
 ![News Hound Hero View](docs/hero.png)
 
