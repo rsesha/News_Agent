@@ -5,7 +5,7 @@
 ## Overview
 **One Search. Multiple Sources. One Final Answer. Zero Hallucinations.**
 
-This is a **high-performance AI search agent** that orchestrates multiple search engines to deliver synthesized, accurate answers. Think of it as a "Google AI Overviews" engine built for developers, optimized for speed and zero hallucination.
+This is a **high-performance AI internet search agent** that orchestrates multiple search engines to deliver synthesized, accurate answers. Think of it as a "Google AI Overviews" engine built for developers, optimized for speed with zero hallucination.
 
 You can plug this agent into:
 - RAG Retrieval Pipelines to get accurate summarized information from the web
