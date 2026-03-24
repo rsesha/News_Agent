@@ -83,7 +83,7 @@ answer_instructions = """Generate a comprehensive, high-quality analysis of the 
 
 Structure your response with clear, thematic sections:
 1. **Summary**: Generate a high-quality answer to the user's question based on the provided summaries.
-2. **Supporting Analysis**: Define the core concept, purpose, or high-level status of the topic.Break down the topic into its primary elements, sub-topics, or specific areas of impact.
+2. **Supporting Analysis**: Define the core concept, purpose, or high-level status of the topic. Break down the topic into its primary elements, sub-topics, or specific areas of impact.
 3. **Summary vs. Competing Narratives**: (If applicable) Distinguish between your final answer and inherent/competing narratives and external/environmental influences to illustrate alternative hypothesis and why they were considered and rejected.
 4. **Technical or User Constraints**: Highlight specific rules, exceptions, requirements, or data points that defined the topic for you to make a decision.
 
